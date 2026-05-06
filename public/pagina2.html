@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pagina 2</title>
+  <style>
+    :root{
+      --bg:#f4f7fb; --card:#ffffff; --accent:#2563eb; --accent-2:#1e40af; --muted:#6b7280; --danger:#dc2626;
+      --shadow: 0 10px 30px rgba(15,23,42,0.06);
+    }
+
+    /* Containment + sizing helpers to avoid overflow */
+    *, *::before, *::after { box-sizing: border-box; }
+    html,body{height:100%}
+    body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;margin:0;background:linear-gradient(180deg,#f8fafc 0%,#eef2ff 100%);color:#0f172a;padding:36px}
+
+    /* Keep page content centered and provide inner padding so elements never touch edges */
+    .wrap{max-width:980px;margin:0 auto;padding:0 18px}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+    h1{font-size:1.4rem;margin:0;display:flex;align-items:center;gap:10px}
+    .subtitle{color:var(--muted);font-size:0.92rem}
+
+    /* Form */
+    form{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:18px;padding:20px;border-radius:12px;background:var(--card);box-shadow:var(--shadow);align-items:start}
+    label{display:block;font-size:0.85rem;color:var(--muted);margin-bottom:8px}
+    input,textarea,button{width:100%;padding:12px;border-radius:10px;border:1px solid #e6eef8;font-size:0.98rem;background:transparent;min-width:0}
+    input:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 4px 18px rgba(37,99,235,0.08)}
+    textarea{min-height:120px;resize:vertical}
+    .full{grid-column:1/-1}
+    .actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+
+    .btn{border:0;padding:11px 14px;border-radius:10px;cursor:pointer;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;font-weight:600}
+    .btn.ghost{background:#fff;color:var(--accent);border:1px solid #e6eef8;font-weight:600}
+    .btn.secondary{background:#fff;color:#111;border:1px solid #eef2ff}
+    .btn.cancel{display:none}
+
+    /* Table */
+    .list{margin-top:22px}
+    .card{background:var(--card);padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    th,td{padding:14px 16px;text-align:left;border-bottom:1px solid #f5f7fb;word-break:break-word;white-space:normal}
+    th{font-size:0.85rem;color:var(--muted);background:transparent}
+    tbody tr{transition:background .12s ease}
+    tbody tr:hover{background:#fbfdff}
+    .empty{padding:26px;text-align:center;color:var(--muted)}
+
+    /* Actions */
+    .actionsCell{display:flex;gap:8px}
+    .btn-icon{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid transparent;background:transparent;cursor:pointer;color:var(--accent)}
+    .btn-icon.delete{color:var(--danger)}
+    .muted{color:var(--muted);font-size:0.85rem}
+    .small{font-size:0.78rem}
+
+    footer{margin-top:14px;color:var(--muted);font-size:0.9rem}
+    @media (max-width:720px){form{grid-template-columns:1fr} .actions{flex-direction:column} th,td{padding:10px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+          <path d="M3 13L5 8H19L21 13V18H19V19a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-1H9v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-1H4v-5z" stroke="#2563eb" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Diario Manutenzione Auto - Pagina 2
+      </h1>
+      <div class="subtitle">Dati salvati localmente</div>
+    </header>
+
+    <form id="entryForm" novalidate>
+      <div>
+        <label for="km">Chilometri</label>
+        <input id="km" name="kilometers" type="number" min="0" step="1" required placeholder="es. 12345">
+      </div>
+      <div>
+        <label for="date">Data</label>
+        <input id="date" name="date" type="date" required>
+      </div>
+      <div class="full">
+        <label for="details">Dettagli</label>
+        <textarea id="details" name="details" required placeholder="Descrivi la manutenzione o il cambio gomme"></textarea>
+      </div>
+      <div class="full actions">
+        <button type="submit" class="btn" id="submitBtn">Aggiungi voce</button>
+        <button type="button" id="cancelEdit" class="btn ghost cancel">Annulla</button>
+        <button type="button" id="clearAll" class="btn ghost">Svuota</button>
+        <button type="button" id="exportJson" class="btn ghost">Esporta JSON</button>
+      </div>
+    </form>
+
+    <section class="list" id="entriesSection">
+      <div class="card">
+        <table id="entriesTable" aria-live="polite">
+          <thead>
+            <tr><th>Data</th><th>Km</th><th>Dettagli</th><th></th></tr>
+          </thead>
+          <tbody id="entriesBody"></tbody>
+        </table>
+        <div id="emptyState" class="empty">Nessuna registrazione ancora.</div>
+      </div>
+    </section>
+
+    <footer>Pagina autonoma — persistente tramite localStorage.</footer>
+  </div>
+
+  <script>
+  (function(){
+    const STORAGE_KEY = 'carMaintenanceDiary.entries';
+    const form = document.getElementById('entryForm');
+    const kmInput = document.getElementById('km');
+    const dateInput = document.getElementById('date');
+    const detailsInput = document.getElementById('details');
+    const entriesBody = document.getElementById('entriesBody');
+    const entriesTable = document.getElementById('entriesTable');
+    const emptyState = document.getElementById('emptyState');
+    const clearAllBtn = document.getElementById('clearAll');
+    const exportBtn = document.getElementById('exportJson');
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelBtn = document.getElementById('cancelEdit');
+
+    let entries = load();
+    let editIndex = -1;
+
+    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
+    function load(){ try{ const raw = localStorage.getItem(STORAGE_KEY); return raw?JSON.parse(raw):[] }catch(e){ console.error(e); return [] } }
+
+    function formatKm(n){ return Number(n).toLocaleString('it-IT') }
+    function formatDateDisplay(dateStr){ if(!dateStr) return ''; const [y,m,d] = dateStr.split('-'); return `${d}/${m}/${y}` }
+
+    function render(){
+      entriesBody.innerHTML = '';
+      if(!entries.length){ entriesTable.style.display = 'none'; emptyState.style.display = 'block'; return }
+      entriesTable.style.display = '';
+      emptyState.style.display = 'none';
+
+      entries.forEach((entry, idx)=>{
+        const tr = document.createElement('tr');
+
+        const dateTd = document.createElement('td');
+        dateTd.innerHTML = `<div>${formatDateDisplay(entry.date)}</div>` + (entry.updatedAt ? `<div class="muted small">modificato ${formatDateDisplay(entry.updatedAt.split('T')[0])}</div>` : '');
+
+        const kmTd = document.createElement('td'); kmTd.textContent = formatKm(entry.kilometers);
+        const detailsTd = document.createElement('td'); detailsTd.textContent = entry.details;
+
+        const actionsTd = document.createElement('td'); actionsTd.className = 'actionsCell';
+        const editBtn = document.createElement('button'); editBtn.type='button'; editBtn.className='btn-icon'; editBtn.title='Modifica';
+        editBtn.innerHTML = '✏️ Modifica';
+        editBtn.addEventListener('click', ()=> startEdit(idx));
+
+        const delBtn = document.createElement('button'); delBtn.type='button'; delBtn.className='btn-icon delete'; delBtn.title='Elimina';
+        delBtn.innerHTML = '🗑️ Elimina';
+        delBtn.addEventListener('click', ()=>{
+          if(!confirm('Eliminare questa registrazione?')) return;
+          entries.splice(idx,1);
+          if(editIndex === idx){ clearEditing(); }
+          else if(editIndex > idx){ editIndex = editIndex - 1 }
+          save(); render();
+        });
+
+        actionsTd.appendChild(editBtn); actionsTd.appendChild(delBtn);
+
+        tr.appendChild(dateTd); tr.appendChild(kmTd); tr.appendChild(detailsTd); tr.appendChild(actionsTd);
+        entriesBody.appendChild(tr);
+      });
+    }
+
+    function startEdit(idx){
+      const entry = entries[idx];
+      editIndex = idx;
+      kmInput.value = entry.kilometers;
+      dateInput.value = entry.date;
+      detailsInput.value = entry.details;
+      submitBtn.textContent = 'Salva modifiche';
+      cancelBtn.style.display = '';
+      kmInput.focus();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function clearEditing(){ editIndex = -1; submitBtn.textContent = 'Aggiungi voce'; cancelBtn.style.display = 'none'; form.reset(); }
+
+    form.addEventListener('submit', function(ev){
+      ev.preventDefault();
+      const km = Number(kmInput.value);
+      const date = dateInput.value;
+      const details = detailsInput.value.trim();
+      if(Number.isNaN(km) || km < 0){ alert('Inserisci un valore numerico valido per i chilometri.'); kmInput.focus(); return }
+      if(!date){ alert('Seleziona una data.'); dateInput.focus(); return }
+      if(!details){ alert('Aggiungi dettagli sulla manutenzione.'); detailsInput.focus(); return }
+
+      if(editIndex >= 0){
+        entries[editIndex] = Object.assign({}, entries[editIndex], { kilometers: km, date, details, updatedAt: new Date().toISOString() });
+        save(); render(); clearEditing();
+      } else {
+        const entry = { kilometers: km, date, details, createdAt: new Date().toISOString() };
+        entries.unshift(entry);
+        save(); render(); form.reset(); kmInput.focus();
+      }
+    });
+
+    cancelBtn.addEventListener('click', function(){ clearEditing(); });
+
+    clearAllBtn.addEventListener('click', function(){ if(!entries.length) return; if(!confirm('Eliminare tutte le registrazioni?')) return; entries = []; save(); clearEditing(); render(); });
+
+    exportBtn.addEventListener('click', function(){ const blob = new Blob([JSON.stringify(entries, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'car-maintenance.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
+
+    render();
+  })();
+  </script>
+</body>
+</html>
